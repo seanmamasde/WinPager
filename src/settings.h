@@ -27,12 +27,11 @@ struct Settings {
     Hotkey moveRight{MOD_CONTROL | MOD_SHIFT | MOD_WIN, VK_RIGHT};
 
     void load();
+#ifndef WH_MOD
     void save() const;
+#endif
     bool operator==(const Settings&) const = default;
 };
-
-bool startupEnabled();
-void setStartup(bool on);
 
 struct Palette {
     bool dark;
@@ -42,11 +41,12 @@ struct Palette {
 
 DWORD readDword(const wchar_t* key, const wchar_t* name, DWORD def);  // HKCU value, def when missing
 bool systemDark();  // taskbar ("Windows mode")
-bool appsDark();    // app windows ("App mode")
 COLORREF accentColor(int shade);  // 0 = Light3 ... 3 = accent ... 6 = Dark3
 Palette pagerPalette(const Settings& s);
 
+#ifndef WH_MOD
 // Settings dialog (modeless). onApply runs after OK/Apply; hotkeyOk[2] reports registration afterwards; desktops is how
 // many exist, the largest useful "Desktops shown" limit being one less.
 void showSettings(HWND owner, Settings& s, int desktops, const bool* hotkeyOk, void (*onApply)(void*), void* ctx);
 HWND settingsWindow();  // for IsDialogMessage; null when closed
+#endif

@@ -17,6 +17,7 @@ enum : UINT {
     WM_APP_VD = WM_APP + 1,  // vd::Change in wParam
     WM_APP_SETTINGS,         // sent by a second instance
     WM_APP_TASKBARS,         // a pager's taskbar went away
+    WM_APP_ICON,             // a window's icon, looked up off this thread (app.cpp fetchIcon)
 };
 
 inline constexpr wchar_t kControllerClass[] = L"WinPager.Controller";
@@ -47,7 +48,9 @@ public:
     void moveWindow(HWND hwnd, int desktop);
     void contextMenu(POINT screen);
     ID2D1Bitmap* icon(HWND hwnd);
+#ifndef WH_MOD
     void applySettings();  // after the settings dialog changed `settings`
+#endif
 
 private:
     static LRESULT CALLBACK proc(HWND, UINT, WPARAM, LPARAM);

@@ -1,7 +1,8 @@
 #Requires -Version 7.3
-# Builds the Windhawk mod: windhawk/winpager.wh.cpp with the files it #includes inlined, as build/windhawk/winpager.wh.cpp
-# (the single file windhawk-mods takes), then compiles it the way Windhawk 1.7 does (windhawk-mods'
-# scripts/compile_mod.py) for every architecture it builds tool mods for. 7.3 passes the quoted -D values through intact.
+# Builds the Windhawk mod: windhawk/winpager.wh.cpp with the files it #includes inlined and only the mod's side of their
+# #ifdef/#ifndef WH_MOD blocks, as build/windhawk/winpager.wh.cpp (the single file windhawk-mods takes), then compiles it
+# the way Windhawk 1.7 does (windhawk-mods' scripts/compile_mod.py) for every architecture it builds tool mods for.
+# 7.3 passes the quoted -D values through intact.
 param([string]$Windhawk = "$env:ProgramFiles\Windhawk")
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot
@@ -12,8 +13,16 @@ $seen = @{}
 function Name([string]$file) { [IO.Path]::GetRelativePath($root, $file).Replace('\', '/') }
 function Expand([string]$file) {
     $resumed = $true
+    $open = [Collections.Generic.List[object]]::new()  # per open #if: whether its WH_MOD branch is kept, $null if not WH_MOD
     foreach ($line in [IO.File]::ReadAllLines($file)) {
-        if ($line -eq '#pragma once') { continue }
+        if ($line -match '^\s*#\s*(ifn?def)\s+WH_MOD\b') { $open.Add($Matches[1] -eq 'ifdef'); continue }
+        $directive = if ($line -match '^\s*#\s*(\w+)') { $Matches[1] } else { '' }
+        $wh = $open.Count -and $open[$open.Count - 1] -is [bool]
+        if ($directive -like 'if*') { $open.Add($null) }
+        elseif ($directive -eq 'else' -and $wh) { $open[$open.Count - 1] = -not $open[$open.Count - 1]; continue }
+        elseif ($directive -eq 'elif' -and $wh) { throw "$file has an #elif in an #ifdef WH_MOD block" }
+        elseif ($directive -eq 'endif') { $open.RemoveAt($open.Count - 1); if ($wh) { continue } }
+        if ($open -contains $false -or $line -eq '#pragma once') { continue }
         if ($line -notmatch '^#include "(.+)"$') {
             if (-not $resumed -and $line) { "// ---- $(Name $file), continued ----"; $resumed = $true }
             $line

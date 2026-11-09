@@ -17,10 +17,6 @@ bool systemDark() {
     return readDword(L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", L"SystemUsesLightTheme", 1) == 0;
 }
 
-bool appsDark() {
-    return readDword(L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", L"AppsUseLightTheme", 1) == 0;
-}
-
 COLORREF accentColor(int shade) {
     BYTE p[32];
     DWORD cb = sizeof p;

@@ -485,8 +485,9 @@ Pager::Pager(App& app, HWND taskbar) : app_(app), taskbar_(taskbar), tip_(app) {
     wchar_t cls[32];
     primary_ = GetClassNameW(taskbar, cls, 32) && !wcscmp(cls, L"Shell_TrayWnd");
     registerClass(app.inst, kPagerClass, proc);
-    hwnd_ = CreateWindowExW(WS_EX_LAYERED, kPagerClass, L"WinPager", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, 1, 1,
-                            taskbar_, nullptr, app.inst, this);
+    // NOPARENTNOTIFY: no WM_PARENTNOTIFY sent into explorer, which could hang us, on create, destroy and clicks
+    hwnd_ = CreateWindowExW(WS_EX_LAYERED | WS_EX_NOPARENTNOTIFY, kPagerClass, L"WinPager", WS_CHILD | WS_CLIPSIBLINGS, 0, 0,
+                            1, 1, taskbar_, nullptr, app.inst, this);
     if (!hwnd_) return;  // taskbar in a shell band right now; App retries
     drop_.Attach(new DropTarget(*this));
     RegisterDragDrop(hwnd_, drop_.Get());

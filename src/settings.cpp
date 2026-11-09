@@ -72,6 +72,8 @@ void Settings::save() const {
     RegCloseKey(k);
 }
 
+namespace {
+
 bool startupEnabled() {
     return RegGetValueW(HKEY_CURRENT_USER, kRun, kRunValue, RRF_RT_REG_SZ, nullptr, nullptr, nullptr) == ERROR_SUCCESS;
 }
@@ -90,6 +92,12 @@ void setStartup(bool on) {
     }
     RegCloseKey(k);
 }
+
+bool appsDark() {  // app windows ("App mode"), which the dialog follows
+    return readDword(L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", L"AppsUseLightTheme", 1) == 0;
+}
+
+}  // namespace
 
 // ---------------------------------------------------------------- settings dialog
 // Real Win32 controls (keyboard navigation, screen readers, DPI scaling come free), painted

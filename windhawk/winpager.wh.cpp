@@ -7,7 +7,7 @@
 // @github          https://github.com/seanmamasde
 // @homepage        https://github.com/seanmamasde/WinPager
 // @include         windhawk.exe
-// @compilerOptions -ld2d1 -ldwrite -lwindowscodecs -ldwmapi -luxtheme -lcomctl32 -lshcore -lshlwapi -lruntimeobject -lole32 -loleaut32 -luuid -lgdi32
+// @compilerOptions -ld2d1 -ldwrite -lwindowscodecs -ldwmapi -lshcore -lruntimeobject -lole32 -luuid -lgdi32
 // @license         MIT
 // ==/WindhawkMod==
 
@@ -107,7 +107,8 @@ The mod runs in its own process; it isn't injected into explorer.exe.
 // Source: https://github.com/seanmamasde/WinPager. This mod is windhawk/winpager.wh.cpp there, with the files it
 // #includes inlined by tools/make-windhawk-mod.ps1; WinPager.exe is built from the same files.
 
-#include <commctrl.h>
+#include <windhawk_utils.h>
+
 #include <cwchar>
 
 #include "../src/vdapi.cpp"
@@ -121,20 +122,20 @@ The mod runs in its own process; it isn't injected into explorer.exe.
 // thread of the tool mod process.
 
 void Settings::load() {
+    using WindhawkUtils::StringSetting;
     auto flag = [](const wchar_t* name, bool& v) { v = Wh_GetIntSetting(name) != 0; };
     auto choice = [](const wchar_t* name, int& v, std::initializer_list<const wchar_t*> options) {
-        const wchar_t* s = Wh_GetStringSetting(name);
+        const StringSetting s = StringSetting::make(name);
         for (int i = 0; const wchar_t* o : options) {
             if (!wcscmp(s, o)) v = i;
             ++i;
         }
-        Wh_FreeStringSetting(s);
     };
     auto hotkey = [](const wchar_t* name, Hotkey& h) {
-        const wchar_t* s = Wh_GetStringSetting(name);
+        const StringSetting s = StringSetting::make(name);
         const auto [mods, vk] = parseHotkey(s);
+        if (!vk && *s.get()) Wh_Log(L"%s: can't read \"%s\", expected a virtual-key code like ctrl+shift+win+37", name, s.get());
         h = {mods, vk};
-        Wh_FreeStringSetting(s);
     };
     flag(L"showWindowOutlines", showWindowOutlines);
     flag(L"showWindowIcons", showWindowIcons);
@@ -150,20 +151,6 @@ void Settings::load() {
     flag(L"hideSystemOsd", hideSystemOsd);
     hotkey(L"moveLeft", moveLeft);
     hotkey(L"moveRight", moveRight);
-}
-
-void Settings::save() const {}  // Windhawk keeps them
-
-// "Configure WinPager…" opens Windhawk, where the settings are (Windhawk 2.0 hosts tool mods in windhawk-mod.exe beside it)
-void showSettings(HWND, Settings&, int, const bool*, void (*)(void*), void*) {
-    std::wstring exe(MAX_PATH, L'\0');
-    exe.resize(GetModuleFileNameW(nullptr, exe.data(), MAX_PATH));
-    exe = exe.substr(0, exe.rfind(L'\\') + 1) + L"windhawk.exe";
-    ShellExecuteW(nullptr, nullptr, exe.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-}
-
-HWND settingsWindow() {
-    return nullptr;
 }
 
 extern "C" IMAGE_DOS_HEADER __ImageBase;
@@ -187,8 +174,6 @@ DWORD WINAPI pagerThread(void*) {
         CloseHandle(single);
         return 0;
     }
-    const INITCOMMONCONTROLSEX icc{sizeof icc, ICC_STANDARD_CLASSES | ICC_LISTVIEW_CLASSES};
-    InitCommonControlsEx(&icc);
     if (SUCCEEDED(OleInitialize(nullptr))) {  // STA + OLE drag and drop
         {
             App app;

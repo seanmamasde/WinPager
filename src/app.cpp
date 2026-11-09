@@ -2,7 +2,9 @@
 
 #include "logic.h"
 #include "pager.h"
+#ifndef WH_MOD
 #include "resource.h"
+#endif
 
 #include <shellapi.h>
 #include <shlobj.h>
@@ -51,6 +53,52 @@ HBITMAP packagedAppIcon(HWND h) {
     PropVariantClear(&v);
     return bmp;
 }
+
+// A window's icon, looked up on the thread pool and posted back as WM_APP_ICON: WM_GETICON waits on the window's app
+// and the packaged-app lookup on the shell, and the pagers share the taskbar's input queue, so neither may block here.
+struct IconRequest {
+    HWND controller, window;
+    HICON icon = nullptr;
+    HBITMAP bitmap = nullptr;
+};
+
+void CALLBACK fetchIcon(PTP_CALLBACK_INSTANCE, void* p) {
+    auto* r = static_cast<IconRequest*>(p);
+    HICON ic = nullptr;
+    for (WPARAM type : {WPARAM(ICON_BIG), WPARAM(ICON_SMALL2)}) {
+        DWORD_PTR res = 0;
+        if (!ic && SendMessageTimeoutW(r->window, WM_GETICON, type, 0, SMTO_ABORTIFHUNG, 50, &res) && res) ic = reinterpret_cast<HICON>(res);
+    }
+    if (!ic) ic = reinterpret_cast<HICON>(GetClassLongPtrW(r->window, GCLP_HICON));
+    if (ic) {
+        r->icon = CopyIcon(ic);  // the app may destroy its own before the controller converts it
+    } else if (SUCCEEDED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) {
+        r->bitmap = packagedAppIcon(r->window);
+        CoUninitialize();
+    }
+    if (!PostMessageW(r->controller, WM_APP_ICON, 0, reinterpret_cast<LPARAM>(r))) {  // the controller is gone
+        if (r->icon) DestroyIcon(r->icon);
+        if (r->bitmap) DeleteObject(r->bitmap);
+        delete r;
+    }
+}
+
+#ifdef WH_MOD
+// The mod's pager starts at every sign-in and settings change: report a Windows build it doesn't know once, not each time.
+bool unsupportedNoticeDue() {
+    wchar_t build[16] = L"", seen[16] = L"";
+    DWORD cb = sizeof build;
+    RegGetValueW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", L"CurrentBuild", RRF_RT_REG_SZ, nullptr, build, &cb);
+    Wh_GetStringValue(L"unsupportedBuild", seen, ARRAYSIZE(seen));
+    if (!wcscmp(build, seen)) return false;
+    Wh_SetStringValue(L"unsupportedBuild", build);
+    return true;
+}
+#else
+bool unsupportedNoticeDue() {
+    return true;
+}
+#endif
 
 // shared OSD host from explorer (from modernflyout repo)
 // ZBID_ABOVELOCK_UX
@@ -103,7 +151,9 @@ int App::run(HINSTANCE hinst) {
     wc.lpfnWndProc = proc;
     wc.hInstance = inst;
     wc.lpszClassName = kControllerClass;
+#ifndef WH_MOD
     wc.hIcon = LoadIconW(inst, MAKEINTRESOURCEW(IDI_APP));
+#endif
     RegisterClassExW(&wc);
     if (!CreateWindowExW(WS_EX_TOOLWINDOW, kControllerClass, L"WinPager", WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, inst, this))
         return 1;
@@ -126,7 +176,9 @@ int App::run(HINSTANCE hinst) {
 
     MSG msg{};
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+#ifndef WH_MOD
         if (HWND dlg = settingsWindow(); dlg && IsDialogMessageW(dlg, &msg)) continue;
+#endif
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
@@ -182,6 +234,21 @@ LRESULT App::handle(UINT msg, WPARAM wp, LPARAM lp) {
     case WM_APP_SETTINGS:
         openSettings();
         return 0;
+    case WM_APP_ICON: {  // fetchIcon's answer; its handles are ours to free
+        const std::unique_ptr<IconRequest> r(reinterpret_cast<IconRequest*>(lp));
+        ComPtr<IWICBitmap> wb;
+        if (r->icon) wic->CreateBitmapFromHICON(r->icon, &wb);
+        else if (r->bitmap) wic->CreateBitmapFromHBITMAP(r->bitmap, nullptr, WICBitmapUsePremultipliedAlpha, &wb);
+        if (r->icon) DestroyIcon(r->icon);
+        if (r->bitmap) DeleteObject(r->bitmap);
+        const auto it = icons_.find(r->window);  // gone if the window closed meanwhile
+        ComPtr<IWICFormatConverter> cv;
+        if (it != icons_.end() && wb && SUCCEEDED(wic->CreateFormatConverter(&cv)) &&
+            SUCCEEDED(cv->Initialize(wb.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom)) &&
+            SUCCEEDED(rt->CreateBitmapFromWicBitmap(cv.Get(), &it->second)))
+            for (auto& p : pagers_) p->update(false, true);
+        return 0;
+    }
     case WM_TIMER:
         if (wp == kTimerRefresh) {
             refresh();
@@ -330,10 +397,11 @@ void App::initApi() {
     const HRESULT hr = api.init(hwnd_, WM_APP_VD);
     if (SUCCEEDED(hr)) return schedule(kDesktops | kWindows | kLayout);
     if (hr == E_NOINTERFACE) {
-        MessageBoxW(nullptr,
-                    L"This Windows build exposes a virtual desktop interface WinPager doesn't know.\n"
-                    L"WinPager targets Windows 11 24H2/25H2 (build 26100 and later).",
-                    L"WinPager", MB_ICONERROR);
+        if (unsupportedNoticeDue())
+            MessageBoxW(nullptr,
+                        L"This Windows build exposes a virtual desktop interface WinPager doesn't know.\n"
+                        L"WinPager targets Windows 11 24H2/25H2 (build 26100 and later).",
+                        L"WinPager", MB_ICONERROR);
         DestroyWindow(hwnd_);
         return;
     }
@@ -373,12 +441,14 @@ void App::hideSystemOsd() {
     if (systemOsd_ && IsWindowVisible(systemOsd_)) ShowWindowAsync(systemOsd_, SW_HIDE);
 }
 
+#ifndef WH_MOD
 void App::applySettings() {
     settings.save();
     registerHotkeys();
     applyTheme();
     schedule(kTaskbars | kLayout | kWindows);
 }
+#endif
 
 void App::rebuildPagers() {
     std::vector<HWND> bars;
@@ -406,6 +476,9 @@ void App::registerHotkeys() {
     for (int i = 0; i < 2; ++i) {
         UnregisterHotKey(hwnd_, kHotkeyLeft + i);
         hotkeyOk[i] = !keys[i]->vk || RegisterHotKey(hwnd_, kHotkeyLeft + i, keys[i]->mods | MOD_NOREPEAT, keys[i]->vk);
+#ifdef WH_MOD  // WinPager.exe shows this in its settings dialog
+        if (!hotkeyOk[i]) Wh_Log(L"%s: another app already uses this shortcut", i ? L"moveRight" : L"moveLeft");
+#endif
     }
 }
 
@@ -456,7 +529,9 @@ void App::contextMenu(POINT pt) {
     AppendMenuW(m, MF_STRING, IDM_CONFIGURE_VD, L"Configure Virtual Desktops…");
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING, IDM_SETTINGS, L"Configure WinPager…");
+#ifndef WH_MOD  // the mod is turned off in Windhawk
     AppendMenuW(m, MF_STRING, IDM_EXIT, L"Exit");
+#endif
     SetForegroundWindow(hwnd_);
     const UINT cmd = TrackPopupMenuEx(m, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_BOTTOMALIGN, pt.x, pt.y, hwnd_, nullptr);
     PostMessageW(hwnd_, WM_NULL, 0, 0);
@@ -474,36 +549,31 @@ void App::contextMenu(POINT pt) {
     case IDM_SETTINGS:
         openSettings();
         break;
+#ifndef WH_MOD
     case IDM_EXIT:
         DestroyWindow(hwnd_);
         break;
+#endif
     }
 }
 
 void App::openSettings() {
+#ifdef WH_MOD  // the mod's settings are in Windhawk (2.0 hosts tool mods in windhawk-mod.exe, next to windhawk.exe)
+    std::wstring exe(MAX_PATH, L'\0');
+    exe.resize(GetModuleFileNameW(nullptr, exe.data(), MAX_PATH));
+    exe = exe.substr(0, exe.rfind(L'\\') + 1) + L"windhawk.exe";
+    ShellExecuteW(nullptr, nullptr, exe.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#else
     showSettings(hwnd_, settings, static_cast<int>(model.desktops.size()), hotkeyOk,
                  [](void* ctx) { static_cast<App*>(ctx)->applySettings(); }, this);
+#endif
 }
 
 ID2D1Bitmap* App::icon(HWND h) {
     auto [it, fresh] = icons_.try_emplace(h);
-    if (!fresh) return it->second.Get();
-    HICON ic = nullptr;
-    for (WPARAM type : {WPARAM(ICON_BIG), WPARAM(ICON_SMALL2)}) {
-        DWORD_PTR r = 0;
-        if (!ic && SendMessageTimeoutW(h, WM_GETICON, type, 0, SMTO_ABORTIFHUNG, 50, &r) && r) ic = reinterpret_cast<HICON>(r);
+    if (fresh) {  // drawn without one until WM_APP_ICON
+        std::unique_ptr<IconRequest> r(new IconRequest{hwnd_, h});
+        if (TrySubmitThreadpoolCallback(fetchIcon, r.get(), nullptr)) r.release();
     }
-    if (!ic) ic = reinterpret_cast<HICON>(GetClassLongPtrW(h, GCLP_HICON));
-    ComPtr<IWICBitmap> wb;
-    if (ic) {
-        wic->CreateBitmapFromHICON(ic, &wb);
-    } else if (HBITMAP hb = packagedAppIcon(h)) {
-        wic->CreateBitmapFromHBITMAP(hb, nullptr, WICBitmapUsePremultipliedAlpha, &wb);
-        DeleteObject(hb);
-    }
-    ComPtr<IWICFormatConverter> cv;
-    if (wb && SUCCEEDED(wic->CreateFormatConverter(&cv)) &&
-        SUCCEEDED(cv->Initialize(wb.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom)))
-        rt->CreateBitmapFromWicBitmap(cv.Get(), &it->second);
     return it->second.Get();
 }
