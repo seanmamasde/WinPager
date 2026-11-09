@@ -30,17 +30,21 @@ BEGIN
     RTEXT           "Position:", IDC_LBL_POS, 108, 37, 116, 10
     AUTORADIOBUTTON "Left edge of the taskbar", IDC_POS0, 230, 34, 176, 14, WS_GROUP | WS_TABSTOP
     AUTORADIOBUTTON "Next to the system tray", IDC_POS1, 230, 49, 176, 14
-    RTEXT           "Theme:", IDC_LBL_THEME, 108, 74, 116, 10
-    AUTORADIOBUTTON "Follow Windows", IDC_THEME0, 230, 71, 176, 14, WS_GROUP | WS_TABSTOP
-    AUTORADIOBUTTON "Light", IDC_THEME1, 230, 86, 176, 14
-    AUTORADIOBUTTON "Dark", IDC_THEME2, 230, 101, 176, 14
-    RTEXT           "Colors:", IDC_LBL_COLORS, 108, 126, 116, 10
-    AUTOCHECKBOX    "Highlight with the Windows accent color", IDC_ACCENT, 230, 123, 176, 14, WS_GROUP | WS_TABSTOP
-    RTEXT           "Startup:", IDC_LBL_STARTUP, 108, 148, 116, 10
-    AUTOCHECKBOX    "Start with Windows", IDC_STARTUP, 230, 145, 176, 14, WS_GROUP | WS_TABSTOP
-    RTEXT           "Desktop switching:", IDC_LBL_SWITCH, 108, 170, 116, 10
-    AUTOCHECKBOX    "Show on-screen display when switching", IDC_SWITCHOSD, 230, 167, 176, 14, WS_GROUP | WS_TABSTOP
-    AUTOCHECKBOX    "Hide the Windows ""Desktop N"" popup", IDC_HIDESYSOSD, 230, 182, 176, 14, WS_TABSTOP
+    RTEXT           "Desktops shown:", IDC_LBL_MAXDESK, 108, 74, 116, 10
+    PUSHBUTTON      "-", IDC_MAXDESK_LESS, 230, 71, 18, 15, WS_GROUP | WS_TABSTOP
+    CTEXT           "", IDC_MAXDESK, 250, 74, 24, 10, SS_NOPREFIX
+    PUSHBUTTON      "+", IDC_MAXDESK_MORE, 276, 71, 18, 15, WS_TABSTOP
+    RTEXT           "Theme:", IDC_LBL_THEME, 108, 96, 116, 10
+    AUTORADIOBUTTON "Follow Windows", IDC_THEME0, 230, 93, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "Light", IDC_THEME1, 230, 108, 176, 14
+    AUTORADIOBUTTON "Dark", IDC_THEME2, 230, 123, 176, 14
+    RTEXT           "Colors:", IDC_LBL_COLORS, 108, 148, 116, 10
+    AUTOCHECKBOX    "Highlight with the Windows accent color", IDC_ACCENT, 230, 145, 176, 14, WS_GROUP | WS_TABSTOP
+    RTEXT           "Startup:", IDC_LBL_STARTUP, 108, 170, 116, 10
+    AUTOCHECKBOX    "Start with Windows", IDC_STARTUP, 230, 167, 176, 14, WS_GROUP | WS_TABSTOP
+    RTEXT           "Desktop switching:", IDC_LBL_SWITCH, 108, 192, 116, 10
+    AUTOCHECKBOX    "Show on-screen display when switching", IDC_SWITCHOSD, 230, 189, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "Hide the Windows ""Desktop N"" popup", IDC_HIDESYSOSD, 230, 204, 176, 14, WS_TABSTOP
 
     RTEXT           "Window one desktop to the left:", IDC_LBL_HK0, 108, 37, 116, 10
     PUSHBUTTON      "", IDC_HK0, 230, 34, 130, 15, WS_GROUP | WS_TABSTOP
@@ -58,8 +62,8 @@ BEGIN
 END
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,0,0
- PRODUCTVERSION 0,1,0,0
+ FILEVERSION 0,1,1,0
+ PRODUCTVERSION 0,1,1,0
  FILEOS VOS_NT_WINDOWS32
  FILETYPE VFT_APP
 BEGIN
@@ -69,8 +73,8 @@ BEGIN
         BEGIN
             VALUE "FileDescription", "WinPager: KDE-style virtual desktop pager"
             VALUE "ProductName", "WinPager"
-            VALUE "FileVersion", "0.1.0"
-            VALUE "ProductVersion", "0.1.0"
+            VALUE "FileVersion", "0.1.1"
+            VALUE "ProductVersion", "0.1.1"
             VALUE "OriginalFilename", "WinPager.exe"
         END
     END

@@ -8,6 +8,7 @@
 #include <windowsx.h>
 #include <wrl/client.h>
 
+#include <algorithm>
 #include <cmath>
 #include <span>
 #include <string>
@@ -48,6 +49,7 @@ void Settings::load() {
     choice(L"displayedText", displayedText, 2);
     choice(L"currentDesktopSelected", currentDesktopSelected, 2);
     choice(L"position", position, 1);
+    choice(L"maxDesktops", maxDesktops, 99);
     choice(L"theme", theme, 2);
     flag(L"accentHighlight", accentHighlight);
     flag(L"switchOsd", switchOsd);
@@ -69,6 +71,7 @@ void Settings::save() const {
     put(L"displayedText", displayedText);
     put(L"currentDesktopSelected", currentDesktopSelected);
     put(L"position", position);
+    put(L"maxDesktops", maxDesktops);
     put(L"theme", theme);
     put(L"accentHighlight", accentHighlight);
     put(L"switchOsd", switchOsd);
@@ -134,9 +137,9 @@ enum : UINT_PTR { kTimerRecord = 1 };
 
 constexpr int kGeneral[] = {IDC_LBL_GENERAL, IDC_OUTLINES, IDC_ICONS, IDC_CURSCREEN, IDC_WRAP, IDC_LBL_TEXT, IDC_TEXT0,
                             IDC_TEXT1, IDC_TEXT2, IDC_LBL_SELECT, IDC_SEL0, IDC_SEL1, IDC_SEL2};
-constexpr int kWindows[] = {IDC_LBL_POS, IDC_POS0, IDC_POS1, IDC_LBL_THEME, IDC_THEME0, IDC_THEME1,
-                            IDC_THEME2, IDC_LBL_COLORS, IDC_ACCENT, IDC_LBL_STARTUP, IDC_STARTUP,
-                            IDC_LBL_SWITCH, IDC_SWITCHOSD, IDC_HIDESYSOSD};
+constexpr int kWindows[] = {IDC_LBL_POS, IDC_POS0, IDC_POS1, IDC_LBL_MAXDESK, IDC_MAXDESK_LESS, IDC_MAXDESK,
+                            IDC_MAXDESK_MORE, IDC_LBL_THEME, IDC_THEME0, IDC_THEME1, IDC_THEME2, IDC_LBL_COLORS,
+                            IDC_ACCENT, IDC_LBL_STARTUP, IDC_STARTUP, IDC_LBL_SWITCH, IDC_SWITCHOSD, IDC_HIDESYSOSD};
 constexpr int kShortcuts[] = {IDC_LBL_HK0, IDC_HK0, IDC_LBL_HK1, IDC_HK1, IDC_HK_NOTE};
 constexpr int kAbout[] = {IDC_ABOUT_ICON, IDC_ABOUT_NAME, IDC_ABOUT_TEXT};
 constexpr std::span<const int> kPages[] = {kGeneral, kWindows, kShortcuts, kAbout};
@@ -165,6 +168,7 @@ struct Dialog {
     void (*onApply)(void*) = nullptr;
     void* ctx = nullptr;
     Settings draft;
+    int desktops = 0;
     bool startup = false;
     bool dark = false;
     Colors c{};
@@ -273,7 +277,8 @@ void paintButton(const NMCUSTOMDRAW& cd) {
         text(label, g.body.Get(), {tx, 0, r.right, r.bottom}, off ? g.c.disabled : g.c.text, DWRITE_TEXT_ALIGNMENT_LEADING);
         if (ring) focusRing(r, s);
     } else {
-        const bool primary = type == BS_DEFPUSHBUTTON && !off;
+        // Win32 makes whichever push button has focus the default; WinUI keeps the accent on OK and marks focus with the ring
+        const bool primary = GetDlgCtrlID(h) == IDOK && !off;
         const D2D1_ROUNDED_RECT rr{{r.left + .5f, r.top + .5f, r.right - .5f, r.bottom - .5f}, 4 * s, 4 * s};
         if (primary) {
             br->SetColor(d2(g.c.accent, down ? .8f : hot ? .9f : 1));
@@ -348,6 +353,17 @@ void showHotkeys() {
                         L"Click a shortcut, then press the new key combination. Esc cancels, Backspace clears.";
     if (!g.hotkeyOk[0] || !g.hotkeyOk[1]) note += L"\n\nA shortcut couldn't be registered: another application already uses it.";
     SetDlgItemTextW(g.hwnd, IDC_HK_NOTE, note.c_str());
+}
+
+void showMaxDesktops() {
+    const int v = g.draft.maxDesktops;
+    SetDlgItemTextW(g.hwnd, IDC_MAXDESK, v ? std::to_wstring(v).c_str() : L"All");
+    HWND less = GetDlgItem(g.hwnd, IDC_MAXDESK_LESS), more = GetDlgItem(g.hwnd, IDC_MAXDESK_MORE);
+    // a button that just hit its end hands keyboard focus to the other one
+    if (GetFocus() == less && v == 1) SendMessageW(g.hwnd, WM_NEXTDLGCTL, reinterpret_cast<WPARAM>(more), TRUE);
+    if (GetFocus() == more && !v) SendMessageW(g.hwnd, WM_NEXTDLGCTL, reinterpret_cast<WPARAM>(less), TRUE);
+    EnableWindow(less, v != 1);
+    EnableWindow(more, v != 0);
 }
 
 // Swallows every key while recording so Win-combos don't reach the shell, then waits for modifiers to be released.
@@ -428,6 +444,7 @@ void toControls() {
     CheckDlgButton(h, IDC_HIDESYSOSD, d.hideSystemOsd);
     EnableWindow(GetDlgItem(h, IDC_ICONS), d.showWindowOutlines);  // as in KDE
     showHotkeys();
+    showMaxDesktops();
 }
 
 int checkedOf(int first, int last) {
@@ -489,6 +506,7 @@ INT_PTR CALLBACK dialogProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         SendMessageW(h, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(smallIcon));
         const DWM_SYSTEMBACKDROP_TYPE mica = DWMSBT_MAINWINDOW;
         DwmSetWindowAttribute(h, DWMWA_SYSTEMBACKDROP_TYPE, &mica, sizeof mica);
+        SetDlgItemTextW(h, IDC_MAXDESK_LESS, L"\u2212");  // the .rc can't hold the minus sign
         SetDlgItemTextW(h, IDC_ABOUT_NAME, L"WinPager " WINPAGER_VERSION);
         SetDlgItemTextW(h, IDC_ABOUT_TEXT,
                         L"A KDE Plasma-style virtual desktop pager for the Windows 11 taskbar.\n\n"
@@ -560,6 +578,12 @@ INT_PTR CALLBACK dialogProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             apply();
         } else if (id == IDC_HK0 || id == IDC_HK1) {
             startRecording(id == IDC_HK1);
+        } else if (id == IDC_MAXDESK_LESS || id == IDC_MAXDESK_MORE) {
+            int& v = g.draft.maxDesktops;  // 1 … one less than there are desktops, then All
+            if (id == IDC_MAXDESK_LESS) v = v ? std::max(1, v - 1) : std::max(1, g.desktops - 1);
+            else v = v && v + 1 < g.desktops ? v + 1 : 0;
+            showMaxDesktops();
+            updateApply();
         } else if (HIWORD(wp) == BN_CLICKED) {
             fromControls();
         }
@@ -612,7 +636,7 @@ INT_PTR CALLBACK dialogProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
 
 }  // namespace
 
-void showSettings(HWND owner, Settings& s, const bool* hotkeyOk, void (*onApply)(void*), void* ctx) {
+void showSettings(HWND owner, Settings& s, int desktops, const bool* hotkeyOk, void (*onApply)(void*), void* ctx) {
     if (g.hwnd) {
         ShowWindow(g.hwnd, SW_RESTORE);
         SetForegroundWindow(g.hwnd);
@@ -631,6 +655,7 @@ void showSettings(HWND owner, Settings& s, const bool* hotkeyOk, void (*onApply)
     }
     g.target = &s;
     g.draft = s;
+    g.desktops = desktops;
     g.startup = startupEnabled();
     g.hotkeyOk = hotkeyOk;
     g.onApply = onApply;

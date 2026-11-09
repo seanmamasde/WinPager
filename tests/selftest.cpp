@@ -14,6 +14,18 @@ int main() {
     CHECK(stepDesktop(2, 3, 1, true) == 0);
     CHECK(stepDesktop(0, 0, 1, true) == 0);
 
+    // Showing 3 of 6 desktops: scroll only as far as the current one needs
+    CHECK(visibleFirst(0, 2, 3, 6) == 0);
+    CHECK(visibleFirst(0, 3, 3, 6) == 1);
+    CHECK(visibleFirst(1, 5, 3, 6) == 3);
+    CHECK(visibleFirst(3, 2, 3, 6) == 2);
+    CHECK(visibleFirst(4, 1, 6, 6) == 0);   // all shown
+    CHECK(visibleFirst(5, 4, 3, 5) == 2);   // desktops removed: back in range
+    CHECK(visibleFirst(2, -1, 3, 6) == 2);  // current unknown: stay
+    // 71 px desktops, 2 px apart, before the taskbar buttons
+    CHECK(fittingDesktops(217, 71, 2) == 3 && fittingDesktops(216, 71, 2) == 2);
+    CHECK(fittingDesktops(10, 71, 2) == 1 && fittingDesktops(-40, 71, 2) == 1);
+
     // Outline mapping: maximized window above a 48 px taskbar, 1080p into a 71x40 desktop rect
     const RECT screen{0, 0, 1920, 1080};
     FRect r = mapWindowRect({0, 0, 1920, 1032}, screen, {73, 0, 144, 40});

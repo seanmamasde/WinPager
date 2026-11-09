@@ -16,7 +16,8 @@ Native C++23 / Win32 / Direct2D, ~240 KB, no runtime dependencies, ~8 MB private
 | Selecting current virtual desktop | Does nothing / Shows the desktop / **Shows Task View** |
 
 Windows page: position (left edge — after the Widgets button if shown; on a left-aligned taskbar it goes beside
-the tray instead — or next to the system tray), theme (follow Windows / light / dark),
+the tray instead — or next to the system tray), desktops shown (all, or at most N; the shown ones scroll along to keep
+the current desktop in view), theme (follow Windows / light / dark),
 accent-colour highlight on/off, start with Windows, desktop switching (show the OSD; hide the Windows popup).
 Settings live in `HKCU\Software\WinPager`.
 
@@ -49,8 +50,9 @@ ctest --test-dir build/Release   # logic self-test (or run build/Release/selftes
 ## Limitations
 
 - Windows 11 24H2/25H2 (build 26100+) only; another build with different interface IDs gets a clear error.
-- The taskbar doesn't reserve space for WinPager; a centered taskbar crowded enough to reach the left edge
-  (or the tray) will draw its buttons under it.
+- The taskbar reserves space only for its own items (the Widgets button gets a fixed 152 px slot), never for
+  WinPager. On a centered taskbar WinPager therefore shows only the desktops that fit beside the buttons (always at
+  least the current one); on a left-aligned taskbar a row of buttons long enough to reach the tray runs under it.
 - With "Hide the Windows popup" on, a volume or brightness popup triggered within 0.6 s of a desktop switch is
   hidden too, since explorer shows both in the same window.
 

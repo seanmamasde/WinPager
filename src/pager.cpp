@@ -490,8 +490,7 @@ Pager::Pager(App& app, HWND taskbar) : app_(app), taskbar_(taskbar), tip_(app) {
     if (!hwnd_) return;  // taskbar in a shell band right now; App retries
     drop_.Attach(new DropTarget(*this));
     RegisterDragDrop(hwnd_, drop_.Get());
-    layout();
-    render();
+    update(true, true);
     ShowWindow(hwnd_, SW_SHOWNA);
 }
 
@@ -547,7 +546,6 @@ void Pager::layout() {
     const double ratio = double(area_.right - area_.left) / std::max(1L, area_.bottom - area_.top);
     itemW_ = std::max(8, static_cast<int>(itemH_ * ratio));
     gap_ = std::max(1, static_cast<int>(std::lround(kGap * scale_)));
-    w_ = count_ * itemW_ + (count_ - 1) * gap_;
     h_ = itemH_;
     y_ = (H - h_) / 2;
     auto advanced = [](const wchar_t* name, DWORD def) {
@@ -562,18 +560,29 @@ void Pager::layout() {
     const bool widgets = primary_ && advanced(L"TaskbarDa", 1) != 0;
     const int aep = widgets ? static_cast<int>(std::lround((6 + 152 + 8) * scale_)) : 0;
     const int pad = static_cast<int>(std::lround(6 * scale_));
-    if (s.position == 0 && centered) {
-        x_ = pad + aep;
-    } else {
-        LONG right = tb.right;
-        if (HWND tray = FindWindowExW(taskbar_, nullptr, L"TrayNotifyWnd", nullptr)) {
-            RECT r;
-            GetWindowRect(tray, &r);
-            MapWindowPoints(nullptr, taskbar_, reinterpret_cast<POINT*>(&r), 2);
-            right = r.left;
-        }
-        x_ = right - pad - w_ - (centered ? 0 : aep);
+    const bool leading = s.position == 0 && centered;
+    LONG right = tb.right;  // where the tray starts
+    if (HWND tray = FindWindowExW(taskbar_, nullptr, L"TrayNotifyWnd", nullptr)) {
+        RECT r;
+        GetWindowRect(tray, &r);
+        MapWindowPoints(nullptr, taskbar_, reinterpret_cast<POINT*>(&r), 2);
+        right = r.left;
     }
+    shown_ = s.maxDesktops > 0 ? std::min(count_, s.maxDesktops) : count_;
+    // The taskbar only makes room for its own items (the Widgets button's fixed slot), so beside a centered row of
+    // buttons show just the desktops that fit. Explorer keeps its hidden legacy Start window over the XAML Start button,
+    // and moving it fires the LOCATIONCHANGE that relayouts us.
+    RECT start;
+    if (HWND st = centered ? FindWindowExW(taskbar_, nullptr, L"Start", nullptr) : nullptr;
+        st && GetWindowRect(st, &start) && start.right > start.left) {
+        MapWindowPoints(nullptr, taskbar_, reinterpret_cast<POINT*>(&start), 2);
+        // shortcut: the row's right end is mirrored from its left end, which is off once a crowded row gets pushed right
+        // by the Widgets button; read the buttons through UI Automation if the tray-side position needs that case.
+        const int room = leading ? start.left - 2 * pad - aep : right - (tb.right - start.left) - 2 * pad;
+        shown_ = std::min(shown_, fittingDesktops(room, itemW_, gap_));
+    }
+    w_ = shown_ * itemW_ + (shown_ - 1) * gap_;
+    x_ = leading ? pad + aep : right - pad - w_ - (centered ? 0 : aep);
     SetWindowPos(hwnd_, HWND_TOP, x_, y_, w_, h_, SWP_NOACTIVATE);
 }
 
@@ -589,8 +598,13 @@ void Pager::update(bool relayout, bool redraw) {
         layout();
         redraw = true;
     }
+    if (const int first = visibleFirst(first_, app_.currentDesktop(), shown_, count_); first != first_) {
+        first_ = first;  // scrolled to keep the current desktop in view
+        tip_.hide();
+        redraw = true;
+    }
     if (!redraw) return;
-    if (hover_ >= count_) hover_ = -1;
+    if (hover_ < first_ || hover_ >= first_ + shown_) hover_ = -1;
     if (drag_.pressed && drag_.hwnd &&
         std::ranges::none_of(app_.model.windows, [&](const Win& w) { return w.hwnd == drag_.hwnd; }))
         endDrag(false);
@@ -599,7 +613,7 @@ void Pager::update(bool relayout, bool redraw) {
 }
 
 FRect Pager::itemRect(int i) const {
-    const float x = static_cast<float>(i * (itemW_ + gap_));
+    const float x = static_cast<float>((i - first_) * (itemW_ + gap_));
     return {x, 0, x + itemW_, static_cast<float>(itemH_)};
 }
 
@@ -610,7 +624,7 @@ bool Pager::shows(const Win& w, int desktop) const {
 int Pager::desktopAt(POINT p) const {
     if (p.x < 0 || p.y < 0 || p.y >= h_) return -1;
     const int i = p.x / (itemW_ + gap_);
-    return i < count_ && p.x - i * (itemW_ + gap_) < itemW_ ? i : -1;
+    return i < shown_ && p.x - i * (itemW_ + gap_) < itemW_ ? first_ + i : -1;
 }
 
 const Win* Pager::windowAt(int desktop, POINT p) const {
@@ -662,7 +676,7 @@ void Pager::render() {
     rt->BeginDraw();
     // alpha 1/255 keeps gaps hit-testable so the tooltip doesn't flicker between rects
     rt->Clear(D2D1::ColorF(0, 0, 0, 1 / 255.f));
-    for (int i = 0; i < count_; ++i) {
+    for (int i = first_; i < first_ + shown_; ++i) {
         const FRect r = itemRect(i);
         const bool isCurrent = i == current;
         if (s.showWindowOutlines) {

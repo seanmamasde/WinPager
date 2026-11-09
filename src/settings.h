@@ -17,7 +17,8 @@ struct Settings {
     int displayedText = 2;           // 0 number, 1 name, 2 none
     int currentDesktopSelected = 2;  // 0 nothing, 1 show desktop, 2 Task View (Win+Tab)
 
-    int position = 0;  // 0 left edge, 1 next to the system tray
+    int position = 0;     // 0 left edge, 1 next to the system tray
+    int maxDesktops = 0;  // desktops shown at most, 0 = all; the shown ones follow the current desktop
     int theme = 0;     // 0 follow Windows, 1 light, 2 dark
     bool accentHighlight = true;
     bool switchOsd = true;      // KWin's desktop change OSD in the middle of the screen
@@ -44,6 +45,7 @@ bool appsDark();    // app windows ("App mode")
 COLORREF accentColor(int shade);  // 0 = Light3 ... 3 = accent ... 6 = Dark3
 Palette pagerPalette(const Settings& s);
 
-// Settings dialog (modeless). onApply runs after OK/Apply; hotkeyOk[2] reports registration afterwards.
-void showSettings(HWND owner, Settings& s, const bool* hotkeyOk, void (*onApply)(void*), void* ctx);
+// Settings dialog (modeless). onApply runs after OK/Apply; hotkeyOk[2] reports registration afterwards; desktops is how
+// many exist, the largest useful "Desktops shown" limit being one less.
+void showSettings(HWND owner, Settings& s, int desktops, const bool* hotkeyOk, void (*onApply)(void*), void* ctx);
 HWND settingsWindow();  // for IsDialogMessage; null when closed

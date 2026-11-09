@@ -21,6 +21,19 @@ inline int stepDesktop(int current, int count, int delta, bool wrap) {
     return t < 0 || t >= count ? current : t;
 }
 
+// First desktop of a `shown`-wide window onto `count` desktops: scrolls from `first` only as far as needed to keep
+// `current` in view.
+inline int visibleFirst(int first, int current, int shown, int count) {
+    first = std::clamp(first, 0, std::max(0, count - shown));
+    if (shown < 1 || current < 0 || current >= count) return first;
+    return std::clamp(first, current - shown + 1, current);
+}
+
+// Desktop rects `item` px wide, `gap` px apart, that fit in `room` px; at least one (the current desktop).
+inline int fittingDesktops(int room, int item, int gap) {
+    return std::max(1, (room + gap) / std::max(1, item + gap));
+}
+
 struct FRect {
     float l, t, r, b;
 };

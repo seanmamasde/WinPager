@@ -36,6 +36,10 @@
 #define IDC_LBL_SWITCH 1240
 #define IDC_SWITCHOSD 1241
 #define IDC_HIDESYSOSD 1242
+#define IDC_LBL_MAXDESK 1250
+#define IDC_MAXDESK_LESS 1251
+#define IDC_MAXDESK 1252
+#define IDC_MAXDESK_MORE 1253
 
 // Keyboard shortcuts
 #define IDC_LBL_HK0 1300

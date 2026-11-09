@@ -481,7 +481,8 @@ void App::contextMenu(POINT pt) {
 }
 
 void App::openSettings() {
-    showSettings(hwnd_, settings, hotkeyOk, [](void* ctx) { static_cast<App*>(ctx)->applySettings(); }, this);
+    showSettings(hwnd_, settings, static_cast<int>(model.desktops.size()), hotkeyOk,
+                 [](void* ctx) { static_cast<App*>(ctx)->applySettings(); }, this);
 }
 
 ID2D1Bitmap* App::icon(HWND h) {

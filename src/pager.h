@@ -84,6 +84,7 @@ private:
     RECT area_{};  // screen area each desktop rect represents
     float scale_ = 1;
     int x_ = 0, y_ = 0, w_ = 0, h_ = 0, itemW_ = 0, itemH_ = 0, gap_ = 1, count_ = 0;
+    int first_ = 0, shown_ = 1;  // desktops drawn: shown_ of the count_, from first_ on
     int hover_ = -1;
     int wheel_ = 0;
     bool tracking_ = false;
