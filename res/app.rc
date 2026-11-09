@@ -1,0 +1,81 @@
+#include <windows.h>
+#include "resource.h"
+
+IDI_APP ICON "WinPager.ico"
+
+// Layout mirrors KDE's Pager Settings: sidebar, page title, right-aligned form labels, OK/Cancel/Apply.
+IDD_SETTINGS DIALOGEX 0, 0, 412, 272
+STYLE DS_SHELLFONT | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "WinPager Settings"
+FONT 9, "Segoe UI", 400, 0, 0x1
+BEGIN
+    LISTBOX         IDC_NAV, 4, 4, 96, 264, LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT | WS_TABSTOP | NOT WS_BORDER
+    LTEXT           "General", IDC_TITLE, 114, 8, 292, 16, SS_NOPREFIX
+
+    RTEXT           "General:", IDC_LBL_GENERAL, 108, 37, 116, 10
+    AUTOCHECKBOX    "Show window outlines", IDC_OUTLINES, 230, 34, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "Show application icons on window outlines", IDC_ICONS, 230, 49, 176, 14, WS_TABSTOP
+    AUTOCHECKBOX    "Show only current screen", IDC_CURSCREEN, 230, 64, 176, 14, WS_TABSTOP
+    AUTOCHECKBOX    "Navigation wraps around", IDC_WRAP, 230, 79, 176, 14, WS_TABSTOP
+    RTEXT           "Text display:", IDC_LBL_TEXT, 108, 104, 116, 10
+    AUTORADIOBUTTON "No text", IDC_TEXT2, 230, 101, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "Desktop number", IDC_TEXT0, 230, 116, 176, 14
+    AUTORADIOBUTTON "Desktop name", IDC_TEXT1, 230, 131, 176, 14
+    RTEXT           "Selecting current virtual desktop:", IDC_LBL_SELECT, 108, 156, 116, 10
+    AUTORADIOBUTTON "Does nothing", IDC_SEL0, 230, 153, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "Shows the desktop", IDC_SEL1, 230, 168, 176, 14
+    AUTORADIOBUTTON "Shows Task View (Win+Tab)", IDC_SEL2, 230, 183, 176, 14
+
+    RTEXT           "Position:", IDC_LBL_POS, 108, 37, 116, 10
+    AUTORADIOBUTTON "Left edge of the taskbar", IDC_POS0, 230, 34, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "Next to the system tray", IDC_POS1, 230, 49, 176, 14
+    RTEXT           "Theme:", IDC_LBL_THEME, 108, 74, 116, 10
+    AUTORADIOBUTTON "Follow Windows", IDC_THEME0, 230, 71, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "Light", IDC_THEME1, 230, 86, 176, 14
+    AUTORADIOBUTTON "Dark", IDC_THEME2, 230, 101, 176, 14
+    RTEXT           "Colors:", IDC_LBL_COLORS, 108, 126, 116, 10
+    AUTOCHECKBOX    "Highlight with the Windows accent color", IDC_ACCENT, 230, 123, 176, 14, WS_GROUP | WS_TABSTOP
+    RTEXT           "Startup:", IDC_LBL_STARTUP, 108, 148, 116, 10
+    AUTOCHECKBOX    "Start with Windows", IDC_STARTUP, 230, 145, 176, 14, WS_GROUP | WS_TABSTOP
+    RTEXT           "Desktop switching:", IDC_LBL_SWITCH, 108, 170, 116, 10
+    AUTOCHECKBOX    "Show on-screen display when switching", IDC_SWITCHOSD, 230, 167, 176, 14, WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "Hide the Windows ""Desktop N"" popup", IDC_HIDESYSOSD, 230, 182, 176, 14, WS_TABSTOP
+
+    RTEXT           "Window one desktop to the left:", IDC_LBL_HK0, 108, 37, 116, 10
+    PUSHBUTTON      "", IDC_HK0, 230, 34, 130, 15, WS_GROUP | WS_TABSTOP
+    RTEXT           "Window one desktop to the right:", IDC_LBL_HK1, 108, 56, 116, 10
+    PUSHBUTTON      "", IDC_HK1, 230, 53, 130, 15, WS_TABSTOP
+    LTEXT           "", IDC_HK_NOTE, 230, 76, 176, 60, SS_NOPREFIX
+
+    ICON            IDI_APP, IDC_ABOUT_ICON, 114, 34, 21, 20, SS_REALSIZECONTROL
+    LTEXT           "WinPager", IDC_ABOUT_NAME, 146, 38, 260, 14, SS_NOPREFIX
+    LTEXT           "", IDC_ABOUT_TEXT, 114, 66, 292, 150, SS_NOPREFIX
+
+    DEFPUSHBUTTON   "OK", IDOK, 246, 250, 50, 15, WS_GROUP
+    PUSHBUTTON      "Cancel", IDCANCEL, 302, 250, 50, 15
+    PUSHBUTTON      "Apply", IDC_APPLY, 358, 250, 50, 15
+END
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,1,0,0
+ PRODUCTVERSION 0,1,0,0
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription", "WinPager: KDE-style virtual desktop pager"
+            VALUE "ProductName", "WinPager"
+            VALUE "FileVersion", "0.1.0"
+            VALUE "ProductVersion", "0.1.0"
+            VALUE "OriginalFilename", "WinPager.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

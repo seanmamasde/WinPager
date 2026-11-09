@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- MicaForEveryone's glass squares arranged as a pager: back = another desktop, front = current desktop with a window outline -->
+  <defs>
+    <linearGradient id="back" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8CE8FF"/>
+      <stop offset="1" stop-color="#3DB4F2"/>
+    </linearGradient>
+    <linearGradient id="front" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#48C6F8"/>
+      <stop offset="1" stop-color="#1764DF"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="win" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.14"/>
+    </linearGradient>
+  </defs>
+  <rect x="84" y="16" width="156" height="156" rx="30" fill="url(#back)"/>
+  <rect x="85" y="17" width="154" height="154" rx="29" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="16" y="84" width="156" height="156" rx="30" fill="url(#front)" fill-opacity="0.93"/>
+  <rect x="16" y="84" width="156" height="156" rx="30" fill="url(#sheen)"/>
+  <rect x="17" y="85" width="154" height="154" rx="29" fill="none" stroke="#FFFFFF" stroke-opacity="0.4" stroke-width="2"/>
+  <rect x="44" y="120" width="100" height="84" rx="10" fill="url(#win)" stroke="#FFFFFF" stroke-opacity="0.95" stroke-width="7"/>
+  <rect x="44" y="120" width="100" height="22" rx="10" fill="#FFFFFF" fill-opacity="0.85"/>
+  <rect x="44" y="132" width="100" height="10" fill="#FFFFFF" fill-opacity="0.85"/>
+</svg>
