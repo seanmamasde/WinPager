@@ -42,8 +42,14 @@ Requires the MSVC build tools (VS 2022/2026 Build Tools with the C++ workload; C
 ```powershell
 ./build.ps1            # Release -> build/Release/WinPager.exe
 ./build.ps1 Debug
+./build.ps1 Windhawk   # Windhawk mod -> build/windhawk/winpager.wh.cpp (needs Windhawk and PowerShell 7.3+)
 ctest --test-dir build/Release   # logic self-test (or run build/Release/selftest.exe)
 ```
+
+The Windhawk mod is `windhawk/winpager.wh.cpp`: the mod's metadata, settings and tool-mod entry point around the same
+sources, which it `#include`s. `./build.ps1 Windhawk` inlines them into the single file [windhawk-mods](https://github.com/ramensoftware/windhawk-mods)
+takes, then compiles that with Windhawk's own compiler for x86, x64 and ARM64, the way Windhawk does when it installs a
+mod. Each release attaches that `winpager.wh.cpp`; a new mod version is a pull request to windhawk-mods with it.
 
 `tools/make-icon.ps1` regenerates `res/WinPager.ico` from `assets/*.svg` (needs `scoop install resvg`).
 

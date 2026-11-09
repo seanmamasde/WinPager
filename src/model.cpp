@@ -44,6 +44,12 @@ bool isCandidate(HWND h, DWORD selfPid, HWND shell) {
     return !(GetClassNameW(h, cls, 32) && wcscmp(cls, L"Windows.UI.Core.CoreWindow") == 0);
 }
 
+// a named CALLBACK, not a lambda: only MSVC converts lambdas to the 32-bit stdcall convention (the mod builds for x86)
+BOOL CALLBACK collectWindow(HWND h, LPARAM p) {
+    reinterpret_cast<std::vector<HWND>*>(p)->push_back(h);
+    return TRUE;
+}
+
 }  // namespace
 
 int Model::indexOf(const GUID& id) const {
@@ -80,10 +86,7 @@ bool Model::refreshDesktops(vd::Api& api, HRESULT& hr) {
 bool Model::refreshWindows(const vd::Api& api) {
     std::vector<HWND> all;
     all.reserve(512);
-    EnumWindows([](HWND h, LPARAM p) {
-        reinterpret_cast<std::vector<HWND>*>(p)->push_back(h);
-        return TRUE;
-    }, reinterpret_cast<LPARAM>(&all));
+    EnumWindows(collectWindow, reinterpret_cast<LPARAM>(&all));
 
     const DWORD self = GetCurrentProcessId();
     const HWND shell = GetShellWindow();

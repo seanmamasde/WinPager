@@ -1,5 +1,9 @@
-param([ValidateSet('Release', 'Debug')][string]$Config = 'Release')
+param([ValidateSet('Release', 'Debug', 'Windhawk')][string]$Config = 'Release', [string]$Windhawk = "$env:ProgramFiles\Windhawk")
 $ErrorActionPreference = 'Stop'
+if ($Config -eq 'Windhawk') {  # the Windhawk mod, compiled by Windhawk's own toolchain
+    & "$PSScriptRoot\tools\make-windhawk-mod.ps1" $Windhawk
+    exit $LASTEXITCODE
+}
 $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 if (-not $vs) { throw 'MSVC build tools not found (winget install Microsoft.VisualStudio.BuildTools)' }
 Import-Module "$vs\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"

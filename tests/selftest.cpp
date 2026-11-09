@@ -26,6 +26,13 @@ int main() {
     CHECK(fittingDesktops(217, 71, 2) == 3 && fittingDesktops(216, 71, 2) == 2);
     CHECK(fittingDesktops(10, 71, 2) == 1 && fittingDesktops(-40, 71, 2) == 1);
 
+    // Windhawk hotkey settings
+    auto [mods, vk] = parseHotkey(L"ctrl+shift+win+37");
+    CHECK(mods == (MOD_CONTROL | MOD_SHIFT | MOD_WIN) && vk == VK_LEFT);
+    CHECK(parseHotkey(L"alt+121").first == MOD_ALT && parseHotkey(L"alt+121").second == VK_F10);
+    CHECK(parseHotkey(L"115").first == 0 && parseHotkey(L"115").second == VK_F4);
+    CHECK(parseHotkey(L"").second == 0 && parseHotkey(L"ctrl+x").second == 0);
+
     // Outline mapping: maximized window above a 48 px taskbar, 1080p into a 71x40 desktop rect
     const RECT screen{0, 0, 1920, 1080};
     FRect r = mapWindowRect({0, 0, 1920, 1032}, screen, {73, 0, 144, 40});

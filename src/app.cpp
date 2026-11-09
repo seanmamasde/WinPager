@@ -20,7 +20,7 @@ namespace {
 
 App* g_app = nullptr;
 
-enum : UINT_PTR { kTimerRefresh = 1, kTimerReinit, kTimerTaskbars, kTimerActivate, kTimerOsd };
+enum : UINT_PTR { kTimerRefresh = 1, kTimerReinit, kTimerTaskbars, kTimerActivate, kTimerSlide };
 enum : unsigned { kDesktops = 1, kWindows = 2, kGeometry = 4, kLayout = 8, kTaskbars = 16, kTitles = 32 };
 enum : int { kHotkeyLeft = 1, kHotkeyRight = 2 };
 enum : UINT { IDM_ADD = 1, IDM_REMOVE, IDM_CONFIGURE_VD, IDM_SETTINGS, IDM_EXIT };
@@ -194,7 +194,7 @@ LRESULT App::handle(UINT msg, WPARAM wp, LPARAM lp) {
             KillTimer(hwnd_, kTimerActivate);
             if (activateOn_ >= 0 && activateOn_ == model.current) SetForegroundWindow(GetShellWindow());
             activateOn_ = -1;
-        } else if (wp == kTimerOsd) {  // missed the end of the slide animation
+        } else if (wp == kTimerSlide) {  // missed the end of the slide animation
             slide_ = nullptr;
             flushOsd();
         }
@@ -352,7 +352,7 @@ void App::showOsd(int from, int to) {
     if (slide_ && IsWindowVisible(slide_)) {  // the OSD would play its cross-fade underneath
         if (osdTo_ < 0) osdFrom_ = from;
         osdTo_ = to;
-        SetTimer(hwnd_, kTimerOsd, 1000, nullptr);
+        SetTimer(hwnd_, kTimerSlide, 1000, nullptr);
         return;
     }
     if (!osd_) osd_ = std::make_unique<Osd>(*this);
@@ -360,7 +360,7 @@ void App::showOsd(int from, int to) {
 }
 
 void App::flushOsd() {
-    KillTimer(hwnd_, kTimerOsd);
+    KillTimer(hwnd_, kTimerSlide);
     const int from = std::exchange(osdFrom_, -1), to = std::exchange(osdTo_, -1);
     if (to >= 0 && to == model.current) showOsd(from, to);
 }

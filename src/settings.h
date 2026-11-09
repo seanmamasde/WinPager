@@ -40,6 +40,7 @@ struct Palette {
     D2D1_COLOR_F highlight;  // KDE ButtonFocus (used by the hover/active desktop frames)
 };
 
+DWORD readDword(const wchar_t* key, const wchar_t* name, DWORD def);  // HKCU value, def when missing
 bool systemDark();  // taskbar ("Windows mode")
 bool appsDark();    // app windows ("App mode")
 COLORREF accentColor(int shade);  // 0 = Light3 ... 3 = accent ... 6 = Dark3

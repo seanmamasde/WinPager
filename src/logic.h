@@ -3,7 +3,10 @@
 #include <windows.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <cwchar>
 #include <string>
+#include <utility>
 #include <vector>
 
 // Fluent "Fast Out, Slow In" easing, cubic-bezier(0, 0, 0, 1). With both x control points at 0, x(u) = u^3, so the
@@ -32,6 +35,18 @@ inline int visibleFirst(int first, int current, int shown, int count) {
 // Desktop rects `item` px wide, `gap` px apart, that fit in `room` px; at least one (the current desktop).
 inline int fittingDesktops(int room, int item, int gap) {
     return std::max(1, (room + gap) / std::max(1, item + gap));
+}
+
+// Windhawk's hotkey setting, "[ctrl+][alt+][shift+][win+]<virtual-key code>" ("ctrl+shift+win+37"), as {MOD_* flags, vk};
+// vk 0 = none.
+inline std::pair<UINT, UINT> parseHotkey(const wchar_t* s) {
+    UINT mods = 0;
+    if (wcsstr(s, L"ctrl+")) mods |= MOD_CONTROL;
+    if (wcsstr(s, L"alt+")) mods |= MOD_ALT;
+    if (wcsstr(s, L"shift+")) mods |= MOD_SHIFT;
+    if (wcsstr(s, L"win+")) mods |= MOD_WIN;
+    const wchar_t* key = wcsrchr(s, L'+');
+    return {mods, static_cast<UINT>(_wtoi(key ? key + 1 : s))};
 }
 
 struct FRect {

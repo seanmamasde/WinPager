@@ -12,6 +12,7 @@ add_executable(WinPager WIN32
     src/pager.cpp
     src/model.cpp
     src/settings.cpp
+    src/theme.cpp
     src/vdapi.cpp
     res/app.rc
     res/app.manifest

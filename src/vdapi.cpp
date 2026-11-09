@@ -3,7 +3,7 @@
 #include <inspectable.h>
 #include <objectarray.h>
 #include <servprov.h>
-#include <shobjidl_core.h>
+#include <shobjidl.h>
 #include <winstring.h>
 
 #include <atomic>
@@ -78,6 +78,15 @@ IVirtualDesktopNotificationService : IUnknown {
     virtual HRESULT STDMETHODCALLTYPE Register(IVirtualDesktopNotification*, DWORD*) = 0;
     virtual HRESULT STDMETHODCALLTYPE Unregister(DWORD) = 0;
 };
+
+// mingw (the Windhawk mod's compiler) ignores MIDL_INTERFACE's ID in __uuidof; keep these in step with the IDs above
+#ifdef __CRT_UUID_DECL
+__CRT_UUID_DECL(IVirtualDesktop, 0x3F07F4BE, 0xB107, 0x441A, 0xAF, 0x0F, 0x39, 0xD8, 0x25, 0x29, 0x07, 0x2C)
+__CRT_UUID_DECL(IApplicationViewCollection, 0x1841C6D7, 0x4F9D, 0x42C0, 0xAF, 0x41, 0x87, 0x47, 0x53, 0x8F, 0x10, 0xE5)
+__CRT_UUID_DECL(IVirtualDesktopManagerInternal, 0x53F5CA0B, 0x158F, 0x4124, 0x90, 0x0C, 0x05, 0x71, 0x58, 0x06, 0x0B, 0x27)
+__CRT_UUID_DECL(IVirtualDesktopNotification, 0xB9E5E94D, 0x233E, 0x49AB, 0xAF, 0x5C, 0x2B, 0x45, 0x41, 0xC3, 0xAA, 0xDE)
+__CRT_UUID_DECL(IVirtualDesktopNotificationService, 0x0CD45E71, 0xD927, 0x4F15, 0x8B, 0x0A, 0x8F, 0xEF, 0x52, 0x53, 0x37, 0xBF)
+#endif
 
 namespace {
 
