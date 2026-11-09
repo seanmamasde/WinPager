@@ -1,7 +1,7 @@
 # WinPager
 
 A KDE Plasma–style virtual desktop pager that lives inside the Windows 11 taskbar.
-Native C++23 / Win32 / Direct2D, ~220 KB, no runtime dependencies, ~8 MB private memory, 0% CPU when idle.
+Native C++23 / Win32 / Direct2D, ~240 KB, no runtime dependencies, ~8 MB private memory, 0% CPU when idle.
 
 ![icon](assets/icon-256.png)
 
