@@ -17,6 +17,10 @@
 
 A virtual desktop pager like KDE Plasma's, living in the Windows 11 taskbar.
 
+![WinPager in the taskbar, showing a desktop's windows](https://raw.githubusercontent.com/seanmamasde/WinPager/main/assets/screenshot1.png)
+
+![The on-screen display when switching desktops](https://raw.githubusercontent.com/seanmamasde/WinPager/main/assets/screenshot2.png)
+
 - Shows every virtual desktop with live window outlines, optionally with application icons
 - Click a desktop to switch to it; click the current one to open Task View (configurable)
 - Scroll over it to flip through desktops

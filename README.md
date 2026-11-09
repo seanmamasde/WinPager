@@ -5,6 +5,10 @@ Native C++23 / Win32 / Direct2D, ~240 KB, no runtime dependencies, ~8 MB private
 
 ![icon](assets/icon-256.png)
 
+![WinPager in the taskbar, showing a desktop's windows](assets/screenshot1.png)
+
+![The on-screen display when switching desktops](assets/screenshot2.png)
+
 ### Settings (right-click → Configure WinPager…)
 
 | KDE option | here |
