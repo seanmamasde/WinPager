@@ -55,6 +55,7 @@ public:
     bool alive() const { return hwnd_ && IsWindow(hwnd_) && IsWindow(taskbar_); }
     void update(bool relayout, bool redraw);
     void restyle();
+    void trackStart();
     void raise() {
         if (alive() && GetWindow(taskbar_, GW_CHILD) != hwnd_)
             SetWindowPos(hwnd_, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
@@ -85,6 +86,7 @@ private:
     float scale_ = 1;
     int x_ = 0, y_ = 0, w_ = 0, h_ = 0, itemW_ = 0, itemH_ = 0, gap_ = 1, count_ = 0;
     int first_ = 0, shown_ = 1;  // desktops drawn: shown_ of the count_, from first_ on
+    int startLeft_ = 0;          // taskbar x of the Start button (trackStart), 0 = not seen yet
     int hover_ = -1;
     int wheel_ = 0;
     bool tracking_ = false;

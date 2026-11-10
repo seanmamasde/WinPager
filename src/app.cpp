@@ -235,6 +235,7 @@ LRESULT App::handle(UINT msg, WPARAM wp, LPARAM lp) {
         openSettings();
         return 0;
     case WM_APP_ICON: {  // fetchIcon's answer; its handles are ours to free
+        if (!iconRequests_.erase(lp)) return 0;  // another app's stray WM_APP message
         const std::unique_ptr<IconRequest> r(reinterpret_cast<IconRequest*>(lp));
         ComPtr<IWICBitmap> wb;
         if (r->icon) wic->CreateBitmapFromHICON(r->icon, &wb);
@@ -312,9 +313,13 @@ void CALLBACK App::onWinEvent(HWINEVENTHOOK, DWORD ev, HWND h, LONG obj, LONG ch
     case EVENT_OBJECT_LOCATIONCHANGE:
         if (tracked) {
             a->schedule(kGeometry);
-        } else if (std::ranges::any_of(a->pagers_, [h](const auto& p) { return p->taskbar() == h || GetParent(h) == p->taskbar(); })) {
-            a->schedule(kLayout);  // taskbar resized or the tray grew
+            return;
         }
+        for (auto& p : a->pagers_)
+            if (p->taskbar() == h || GetParent(h) == p->taskbar()) {
+                p->trackStart();       // now: Explorer may park its Start window again before the relayout
+                a->schedule(kLayout);  // taskbar resized, the tray grew or Start moved
+            }
         return;
     case EVENT_OBJECT_NAMECHANGE:
         if (tracked) a->schedule(kTitles);
@@ -465,6 +470,9 @@ void App::rebuildPagers() {
     }
     if (settings.showOnlyCurrentScreen)
         for (HWND h = nullptr; (h = FindWindowExW(nullptr, h, L"Shell_SecondaryTrayWnd", nullptr));) bars.push_back(h);
+    // As KDE's pager does, one pager shows every screen, unless the other screens have taskbars (Windows' "Show my
+    // taskbar on all displays") for pagers of their own
+    perScreen = bars.size() > 1;
     std::erase_if(pagers_, [&](const auto& p) { return !p->alive() || std::ranges::find(bars, p->taskbar()) == bars.end(); });
     for (HWND b : bars)
         if (std::ranges::none_of(pagers_, [b](const auto& p) { return p->taskbar() == b; }))
@@ -573,7 +581,7 @@ ID2D1Bitmap* App::icon(HWND h) {
     auto [it, fresh] = icons_.try_emplace(h);
     if (fresh) {  // drawn without one until WM_APP_ICON
         std::unique_ptr<IconRequest> r(new IconRequest{hwnd_, h});
-        if (TrySubmitThreadpoolCallback(fetchIcon, r.get(), nullptr)) r.release();
+        if (TrySubmitThreadpoolCallback(fetchIcon, r.get(), nullptr)) iconRequests_.insert(reinterpret_cast<LPARAM>(r.release()));
     }
     return it->second.Get();
 }

@@ -521,6 +521,18 @@ LRESULT CALLBACK Pager::proc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     return p->handle(msg, wp, lp);
 }
 
+// Explorer keeps its hidden legacy Start window over the XAML Start button, but its old layout code also keeps parking it
+// at the taskbar's leading edge, where it usually stays on a secondary taskbar: remember where it last sat over the button.
+// shortcut: a move that Explorer undoes before this thread reads it is missed until the next one; read the XAML Start
+// button through UI Automation if that shows.
+void Pager::trackStart() {
+    RECT r;
+    if (HWND st = FindWindowExW(taskbar_, nullptr, L"Start", nullptr); st && GetWindowRect(st, &r) && r.left < r.right) {
+        MapWindowPoints(nullptr, taskbar_, reinterpret_cast<POINT*>(&r), 2);
+        if (r.left > 0) startLeft_ = r.left;
+    }
+}
+
 void Pager::layout() {
     const Settings& s = app_.settings;
     RECT tb{};
@@ -531,7 +543,7 @@ void Pager::layout() {
         label_ = textFormat(app_.dwrite.Get(), L"Segoe UI Variable Small", DWRITE_FONT_WEIGHT_NORMAL, 12 * scale_, true);
     }
     monitor_ = MonitorFromWindow(taskbar_, MONITOR_DEFAULTTONEAREST);
-    if (s.showOnlyCurrentScreen) {
+    if (app_.perScreen) {
         MONITORINFO mi{sizeof mi};
         GetMonitorInfoW(monitor_, &mi);
         area_ = mi.rcMonitor;
@@ -571,15 +583,12 @@ void Pager::layout() {
     }
     shown_ = s.maxDesktops > 0 ? std::min(count_, s.maxDesktops) : count_;
     // The taskbar only makes room for its own items (the Widgets button's fixed slot), so beside a centered row of
-    // buttons show just the desktops that fit. Explorer keeps its hidden legacy Start window over the XAML Start button,
-    // and moving it fires the LOCATIONCHANGE that relayouts us.
-    RECT start;
-    if (HWND st = centered ? FindWindowExW(taskbar_, nullptr, L"Start", nullptr) : nullptr;
-        st && GetWindowRect(st, &start) && start.right > start.left) {
-        MapWindowPoints(nullptr, taskbar_, reinterpret_cast<POINT*>(&start), 2);
+    // buttons show just the desktops that fit.
+    trackStart();
+    if (centered && startLeft_) {
         // shortcut: the row's right end is mirrored from its left end, which is off once a crowded row gets pushed right
         // by the Widgets button; read the buttons through UI Automation if the tray-side position needs that case.
-        const int room = leading ? start.left - 2 * pad - aep : right - (tb.right - start.left) - 2 * pad;
+        const int room = leading ? startLeft_ - 2 * pad - aep : right - (tb.right - startLeft_) - 2 * pad;
         shown_ = std::min(shown_, fittingDesktops(room, itemW_, gap_));
     }
     w_ = shown_ * itemW_ + (shown_ - 1) * gap_;
@@ -619,7 +628,7 @@ FRect Pager::itemRect(int i) const {
 }
 
 bool Pager::shows(const Win& w, int desktop) const {
-    return (w.desktop == desktop || w.desktop < 0) && (!app_.settings.showOnlyCurrentScreen || w.monitor == monitor_);
+    return (w.desktop == desktop || w.desktop < 0) && (!app_.perScreen || w.monitor == monitor_);
 }
 
 int Pager::desktopAt(POINT p) const {
@@ -731,7 +740,7 @@ void Pager::showTip(int i) {
     MapWindowPoints(hwnd_, nullptr, reinterpret_cast<POINT*>(&a), 2);
     RECT bar;
     GetWindowRect(taskbar_, &bar);
-    tip_.show(a, bar, i, app_.settings.showOnlyCurrentScreen ? monitor_ : nullptr, scale_);
+    tip_.show(a, bar, i, app_.perScreen ? monitor_ : nullptr, scale_);
 }
 
 void Pager::endDrag(bool drop) {

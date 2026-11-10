@@ -59,7 +59,7 @@ The mod runs in its own process; it isn't injected into explorer.exe.
   $name: Show application icons on window outlines
 - showOnlyCurrentScreen: true
   $name: Show only current screen
-  $description: Puts a pager on each monitor's taskbar. Off shows one pager on the main taskbar with every monitor.
+  $description: Puts a pager on each monitor's taskbar. Off, or with no taskbars on the other monitors, one pager on the main taskbar shows every monitor.
 - wrapPage: false
   $name: Navigation wraps around
 - displayedText: none

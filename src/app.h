@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 class Pager;
 class Osd;
@@ -40,6 +41,7 @@ public:
     Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> brush;
     Microsoft::WRL::ComPtr<ID2D1Layer> layer;
     bool hotkeyOk[2] = {true, true};
+    bool perScreen = false;  // each pager shows just its own screen (see rebuildPagers)
 
     int currentDesktop() const { return pending_ >= 0 ? pending_ : model.current; }
     void pagerDied() { PostMessageW(hwnd_, WM_APP_TASKBARS, 0, 0); }
@@ -85,4 +87,5 @@ private:
     HWND systemOsd_ = nullptr;       // explorer's shared OSD host (volume, brightness, "Desktop N")
     ULONGLONG switchTick_ = 0;
     std::unordered_map<HWND, Microsoft::WRL::ComPtr<ID2D1Bitmap>> icons_;
+    std::unordered_set<LPARAM> iconRequests_;  // fetchIcon's in flight: a WM_APP_ICON lParam that isn't one isn't ours
 };

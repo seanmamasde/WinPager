@@ -62,8 +62,8 @@ BEGIN
 END
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,1,0
- PRODUCTVERSION 0,1,1,0
+ FILEVERSION 0,1,2,0
+ PRODUCTVERSION 0,1,2,0
  FILEOS VOS_NT_WINDOWS32
  FILETYPE VFT_APP
 BEGIN
@@ -73,8 +73,8 @@ BEGIN
         BEGIN
             VALUE "FileDescription", "WinPager: KDE-style virtual desktop pager"
             VALUE "ProductName", "WinPager"
-            VALUE "FileVersion", "0.1.1"
-            VALUE "ProductVersion", "0.1.1"
+            VALUE "FileVersion", "0.1.2"
+            VALUE "ProductVersion", "0.1.2"
             VALUE "OriginalFilename", "WinPager.exe"
         END
     END

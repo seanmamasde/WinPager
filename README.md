@@ -1,7 +1,7 @@
 # WinPager
 
 A KDE Plasma–style virtual desktop pager that lives inside the Windows 11 taskbar.
-Native C++23 / Win32 / Direct2D, ~240 KB, no runtime dependencies, ~8 MB private memory, 0% CPU when idle.
+Native C++23 / Win32 / Direct2D, ~250 KB, no runtime dependencies, ~8 MB private memory, 0% CPU when idle.
 
 ![icon](assets/icon-256.png)
 
@@ -14,7 +14,7 @@ Native C++23 / Win32 / Direct2D, ~240 KB, no runtime dependencies, ~8 MB private
 | KDE option | here |
 |---|---|
 | Show window outlines / application icons on outlines | same |
-| Show only current screen | same; also puts WinPager on **each monitor's taskbar** (off = one WinPager on the main taskbar showing all monitors) |
+| Show only current screen | same; also puts WinPager on **each monitor's taskbar** (off, or no taskbars on the other monitors = one WinPager on the main taskbar showing all monitors) |
 | Navigation wraps around | same (wheel and shortcuts) |
 | Text display: none / number / name | same (names come from Task View renames) |
 | Selecting current virtual desktop | Does nothing / Shows the desktop / **Shows Task View** |
